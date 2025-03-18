@@ -25,13 +25,15 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectDto createProject(String name) {
-        if(name.trim().isEmpty()){
+        if (name.trim().isEmpty()) {
             throw new BadRequestException("project name cannot be empty");
         }
         projectRepository
                 .findByName(name)
                 .ifPresent(project ->
-                    {throw new BadRequestException("project with that name was created  already");});
+                {
+                    throw new BadRequestException("project with that name was created  already");
+                });
 
 
         Project project = projectRepository.saveAndFlush(
@@ -44,7 +46,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectDto updateProject(Long id, String name) {
-        if(name.trim().isEmpty()){
+        if (name.trim().isEmpty()) {
             throw new BadRequestException("project name cannot be empty");
         }
         Project project = projectRepository
