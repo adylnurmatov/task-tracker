@@ -121,24 +121,4 @@ public class TaskStateServiceImpl implements TaskStateService {
             taskStateRepository.saveAndFlush(oldRightTaskState);
         }
     }
-
-
-//    Optional<TaskState> optionalOldLeftTaskState = changeTaskState.getLeftTaskState();
-//        Optional<TaskState> optionalOldRightTaskState = changeTaskState.getRightTaskState();
-//
-//        optionalOldLeftTaskState
-//                .ifPresent(it -> {
-//
-//                    it.setRightTaskState(optionalOldRightTaskState.orElse(null));
-//
-//                    taskStateRepository.saveAndFlush(it);
-//                });
-//
-//        optionalOldRightTaskState
-//                .ifPresent(it -> {
-//
-//                    it.setLeftTaskState(optionalOldLeftTaskState.orElse(null));
-//
-//                    taskStateRepository.saveAndFlush(it);
-//                });
 }

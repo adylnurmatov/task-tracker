@@ -23,6 +23,5 @@ public class TaskStateDto {
 
     private Instant createdAt;
 
-
     private List<TaskDto> tasks;
 }

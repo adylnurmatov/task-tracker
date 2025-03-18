@@ -18,9 +18,11 @@ public class Task {
     private Long id;
     @Column(name = "name")
     private String name;
+    @Builder.Default
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
     private String desctiption;
-
+    @ManyToOne
+    private TaskState taskState;
 
 }
