@@ -9,6 +9,9 @@ public class TaskRequest {
         this.description = description;
     }
 
+    public TaskRequest() {
+    }
+
     public String getName() {
         return name;
     }
