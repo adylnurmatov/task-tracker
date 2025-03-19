@@ -2,7 +2,6 @@ package com.nurmatov.tasktracker.service;
 
 import com.nurmatov.tasktracker.dto.TaskDto;
 import com.nurmatov.tasktracker.dto.TaskRequest;
-import com.nurmatov.tasktracker.dto.TaskStateDto;
 
 import java.util.List;
 

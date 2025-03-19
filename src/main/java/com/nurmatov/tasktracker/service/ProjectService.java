@@ -2,7 +2,6 @@ package com.nurmatov.tasktracker.service;
 
 
 import com.nurmatov.tasktracker.dto.ProjectDto;
-import com.nurmatov.tasktracker.entity.Project;
 
 import java.util.List;
 import java.util.Optional;

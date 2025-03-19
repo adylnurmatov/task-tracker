@@ -13,16 +13,17 @@ import java.util.stream.Collectors;
 @Component
 public class TaskStateMapperImpl implements TaskStateMapper {
     private final TaskMapper taskMapper;
+
     @Override
     public TaskStateDto toDto(TaskState taskState) {
         return TaskStateDto.builder()
                 .id(taskState.getId())
                 .name(taskState.getName())
                 .createdAt(taskState.getCreatedAt())
-                .leftTaskStateId(taskState.getLeftTaskState().map(TaskState :: getId).orElse(null))
-                .rightTaskStateId(taskState.getRightTaskState().map(TaskState :: getId).orElse(null))
+                .leftTaskStateId(taskState.getLeftTaskState().map(TaskState::getId).orElse(null))
+                .rightTaskStateId(taskState.getRightTaskState().map(TaskState::getId).orElse(null))
 
-                .tasks(taskState.getTasks().stream().map(taskMapper :: toDto).collect(Collectors.toList()))
+                .tasks(taskState.getTasks().stream().map(taskMapper::toDto).collect(Collectors.toList()))
                 .build();
     }
 }
