@@ -16,4 +16,13 @@ public class ProjectMapperImpl implements ProjectMapper {
                 .createdAt(project.getCreatedAt())
                 .build();
     }
+
+    @Override
+    public Project toEntity(ProjectDto projectDto) {
+        Project project = new Project();
+        project.setId(projectDto.getId());
+        project.setName(projectDto.getName());
+        project.setCreatedAt(projectDto.getCreatedAt());
+        return project;
+    }
 }

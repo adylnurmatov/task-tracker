@@ -5,4 +5,5 @@ import com.nurmatov.tasktracker.entity.Project;
 
 public interface ProjectMapper {
     ProjectDto toDto(Project project);
+    Project toEntity(ProjectDto projectDto);
 }
