@@ -10,11 +10,17 @@ import com.nurmatov.tasktracker.mapper.UserMapper;
 import com.nurmatov.tasktracker.repository.UserRepository;
 import com.nurmatov.tasktracker.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -61,10 +67,41 @@ public class UserServiceImpl implements UserService {
         userRepository.delete(user);
         return Optional.of(userMapper.toUserDto(user));
     }
+
     @Transactional
     @Override
     public Optional<UserDto> findByUsername(String username) {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("User not found"));
         return Optional.of(userMapper.toUserDto(user));
+    }
+
+    public OAuth2User processOAuthPostLogin(OAuth2User oAuth2User) {
+        String email = oAuth2User.getAttribute("email");
+        String name = oAuth2User.getAttribute("name");
+        System.out.println("oAuth2User Email: " + email);
+        System.out.println("oAuth2User name: " + name);
+
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setUsername(name);
+            Authority authority = new Authority();
+            authority.setUser(newUser);
+            authority.setRole(Role.ROLE_CLIENT.name());
+            newUser.getAuthorities().add(authority);
+            newUser.setPassword(bCryptPasswordEncoder.encode(UUID.randomUUID().toString()));
+            return userRepository.save(newUser);
+        });
+
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getAuthorities().toString()));
+        return new DefaultOAuth2User(authorities, oAuth2User.getAttributes(), "email");
+    }
+
+    @Transactional
+    @Override
+    public User findByEmail(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new NotFoundException("User not found"));
+        System.out.println(user.getAuthorities().size());
+        return user;
     }
 }
