@@ -10,15 +10,19 @@ import com.nurmatov.tasktracker.mapper.UserMapper;
 import com.nurmatov.tasktracker.repository.UserRepository;
 import com.nurmatov.tasktracker.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Override
     public Optional<UserDto> findById(Long id) {
@@ -31,8 +35,10 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setUsername(userRequest.getUsername());
         user.setEmail(userRequest.getEmail());
-        user.setPassword(userRequest.getPassword());
+        user.setPassword("{bcrypt}" + bCryptPasswordEncoder.encode(userRequest.getPassword()));
+        System.out.println(userRequest.getPassword());
         Authority authority = new Authority();
+        authority.setUser(user);
         authority.setRole(Role.ROLE_CLIENT.name());
         user.getAuthorities().add(authority);
         userRepository.save(user);
@@ -53,6 +59,12 @@ public class UserServiceImpl implements UserService {
     public Optional<UserDto> delete(Long id) {
         User user = userRepository.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
         userRepository.delete(user);
+        return Optional.of(userMapper.toUserDto(user));
+    }
+    @Transactional
+    @Override
+    public Optional<UserDto> findByUsername(String username) {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("User not found"));
         return Optional.of(userMapper.toUserDto(user));
     }
 }

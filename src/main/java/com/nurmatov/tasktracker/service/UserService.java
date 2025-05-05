@@ -14,4 +14,5 @@ public interface UserService {
     Optional<UserDto> update(Long userId, UserDto userDto);
 
     Optional<UserDto> delete(Long id);
+    Optional<UserDto> findByUsername(String username);
 }

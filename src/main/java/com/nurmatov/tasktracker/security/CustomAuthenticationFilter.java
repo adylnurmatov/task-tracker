@@ -1,10 +1,9 @@
 package com.nurmatov.tasktracker.security;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nurmatov.tasktracker.dto.UserDto;
+import com.nurmatov.tasktracker.service.UserService;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,66 +16,96 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON_VALUE;
 
 public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
+    private final UserService userService;
+    private final JwtTokenService jwtTokenService;
 
-    public CustomAuthenticationFilter(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public CustomAuthenticationFilter(AuthenticationConfiguration authenticationConfiguration,
+                                      UserService userService,
+                                      JwtTokenService jwtTokenService) throws Exception {
         this.authenticationManager = authenticationConfiguration.getAuthenticationManager();
+        this.userService = userService;
+        this.jwtTokenService = jwtTokenService;
     }
-
 
     @Override
-    public Authentication attemptAuthentication(
-            HttpServletRequest request,
-            HttpServletResponse response) throws AuthenticationException {
+    public Authentication attemptAuthentication(HttpServletRequest request,
+                                                HttpServletResponse response) throws AuthenticationException {
+
         String username = request.getParameter("username");
         String password = request.getParameter("password");
+
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(username, password);
-        return authenticationManager.authenticate(authenticationToken);
+
+        Authentication authentication = authenticationManager.authenticate(authenticationToken);
+
+        User user = (User) authentication.getPrincipal();
+
+        Set<String> allowedRoles = Set.of("ROLE_CLIENT", "ROLE_ADMIN");
+
+        boolean hasAllowedRole = user.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> allowedRoles.contains(grantedAuthority.getAuthority()));
+
+        if (!hasAllowedRole) {
+            throw new AuthenticationException("Access denied: Only CLIENTS or ADMINS are allowed to login") {
+            };
+        }
+
+        return authentication;
     }
 
-
+    @Override
     protected void successfulAuthentication(HttpServletRequest request,
                                             HttpServletResponse response,
                                             FilterChain chain,
-                                            Authentication authentication) throws IOException, ServletException {
+                                            Authentication authentication) throws IOException {
 
         User user = (User) authentication.getPrincipal();
-        Algorithm algorithm = Algorithm.HMAC256("secret".getBytes());
-        String access_token = JWT.create()
-                .withSubject(user.getUsername())
-                .withExpiresAt(new Date(System.currentTimeMillis() + 60 * 60 * 1000))
-                .withIssuer(request.getRequestURL().toString())
-                .withClaim("roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
-                .sign(algorithm);
-        Map<String, String> token = new HashMap<>();
-        token.put("accessToken", access_token);
+        Optional<UserDto> userResponse = userService.findByUsername(user.getUsername());
+
+        if (userResponse.isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType(APPLICATION_JSON_VALUE);
+            new ObjectMapper().writeValue(response.getOutputStream(), Map.of("error", "User not found"));
+            return;
+        }
+
+        Long userId = userResponse.get().getId();
+
+        List<String> roles = user.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+        String accessToken = jwtTokenService.createAccessToken(user.getUsername(), roles, request.getRequestURL().toString());
+        String refreshToken = jwtTokenService.createRefreshToken(user.getUsername(), roles, request.getRequestURI());
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("userId", userId.toString());
+        responseBody.put("accessToken", accessToken);
+        responseBody.put("refreshToken", refreshToken);
+
         response.setContentType(APPLICATION_JSON_VALUE);
-        new ObjectMapper().writeValue(response.getOutputStream(), token);
+        new ObjectMapper().writeValue(response.getOutputStream(), responseBody);
     }
 
-    protected void unsuccessfulAuthentication(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationException failed) throws IOException {
-
-
-        String access_token = "Unsuccessful Authentication";
-        Map<String, String> token = new HashMap<>();
-        token.put("accessToken", access_token);
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request,
+                                              HttpServletResponse response,
+                                              AuthenticationException failed) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(APPLICATION_JSON_VALUE);
-        new ObjectMapper().writeValue(response.getOutputStream(), token);
-
+        new ObjectMapper().writeValue(response.getOutputStream(),
+                Map.of("error_message", "Authentication failed: " + failed.getMessage()));
     }
 }
-
-

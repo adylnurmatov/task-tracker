@@ -19,6 +19,7 @@ public class UserMapperImpl implements UserMapper {
         user.setId(userDto.getId());
         user.setUsername(userDto.getUsername());
         user.setEmail(userDto.getEmail());
+        user.setPassword(userDto.getPassword());
         user.setProjects(userDto.getProjects().stream().map(projectMapper::toEntity).collect(Collectors.toList()));
         return user;
     }
@@ -29,6 +30,7 @@ public class UserMapperImpl implements UserMapper {
         userDto.setId(user.getId());
         userDto.setUsername(user.getUsername());
         userDto.setEmail(user.getEmail());
+        userDto.setPassword(user.getPassword());
         userDto.setRole(user.getAuthorities().toString());
         userDto.setProjects(user.getProjects().stream().map(projectMapper::toDto).collect(Collectors.toList()));
         return userDto;
